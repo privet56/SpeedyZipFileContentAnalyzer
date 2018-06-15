@@ -13,6 +13,7 @@ import LoggerPipe from "./loggerPipe";
 //cmd params & help (see https://github.com/theclibook/theclibook/blob/master/sourcecode/client-bootstrap/bin/lounger-cli)
 //output: in table
 //cfg - several file content processor
+//cfg: file patterns to be analyzed
 //time output
 //stopword handling (ignore them)
 //cli help/error handling
