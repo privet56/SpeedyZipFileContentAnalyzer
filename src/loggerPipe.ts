@@ -19,7 +19,7 @@ class LoggerPipe extends Writable
     }*/
     _write(chunk: any, encoding?: string, cb?: Function) : void
     {
-        console.log("logger:write:"+chunk.toString());
+        console.log(chunk.toString());
         cb();
     }
     _read(size:number) : void
@@ -28,7 +28,7 @@ class LoggerPipe extends Writable
     }
     _final()
     {
-        console.log("logger:final --- END");
+        console.log("END");
     }
 }
 

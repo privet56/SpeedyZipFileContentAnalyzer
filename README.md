@@ -7,3 +7,7 @@
 ### libs/hints
 	npm install unzip --save
 	npm install @types/unzip --save
+
+### start command line app with:
+	shell 1: npm run watch-ts
+	shell 2: node dist/app.js

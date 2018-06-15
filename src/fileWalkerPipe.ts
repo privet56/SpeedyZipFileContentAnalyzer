@@ -6,46 +6,57 @@ import bluebird from "bluebird";
 var request = require('request');
 var zlib = require('zlib');
 var tar = require('tar');
+import { ArchiveContent, ArchiveContentType } from "./model/archiveContent";
 import CfgPipe from "./cfgPipe";
 import LoggerPipe from "./loggerPipe";
-import { Readable, Transform, Duplex } from 'stream';
+import { Readable, Transform, Duplex, TransformOptions } from 'stream';
 
 const fs = require('fs');
 
 class FileWalkerPipe extends Transform
 {
+    protected nrOfArchivesRead:number = 0;
+
     constructor(protected cfgPipe:CfgPipe, protected loggerPipe:LoggerPipe)
     {
-        super();
+        super({readableObjectMode:true});
     }
 
-    _write(chunk: any, encoding?: string, cb?: Function) : void
+    _write(chunk: any, encoding?: string, cb2BeCalledOnFinish?: Function) : void
     {
+        let nrOfFilesInArchive:number = 0;
+        let start:Date = new Date();
         fs.createReadStream(chunk)
             .on('error', (err:any) => {
                 this.loggerPipe.write("FileWalkerPipe:write("+chunk+"):ERR !fs.createReadStream:\n----------\n"+err+"\n-------------");
-                cb();
+                cb2BeCalledOnFinish();
             })
             .pipe(unzip.Parse())
             .on('error', (err:any) => {
                 this.loggerPipe.write("FileWalkerPipe:write("+chunk+"):ERR !unzip.parse:\n----------\n"+err+"\n-------------");
-                cb();
+                cb2BeCalledOnFinish();
             })
             .on('entry',  (entry:unzip.Entry) =>
             {
                 entry.autodrain();
                 var fileName = entry.path;
                 var type = entry.type; // 'Directory' or 'File'
-                this.loggerPipe.write("FileWalkerPipe:write("+chunk+"):INF "+type+" found in archive:>"+fileName+"<");
+                //this.loggerPipe.write("FileWalkerPipe:write("+chunk+"):INF "+type+" found in archive:>"+fileName+"<");
+                var arvhiveFileContent:ArchiveContent = new ArchiveContent(ArchiveContent.name, fileName, ArchiveContentType.name, chunk.toString());
+                this.push(arvhiveFileContent);
+                nrOfFilesInArchive++;
                 //var size = entry.size;
                 //entry.pipe(fs.createWriteStream('output/path'));
             })
             .on('close', () => {
                 //this.loggerPipe.write("FileWalkerPipe:write("+chunk+"):INF: close file");
-                cb();
-            });
+                let end:Date = new Date();
+                let duration:number = ((end.valueOf() - start.valueOf()) / 1000);
+                let sDuration = (duration < 11) ? duration.toFixed(3) : duration.toFixed(0);
 
-        //this.loggerPipe.write("FileWalker:write: working on file '"+chunk+"'");
+                this.loggerPipe.write("FileWalker:write: listing("+(++this.nrOfArchivesRead)+") file '"+chunk+"' finished (nrOfFilesInArchive:"+nrOfFilesInArchive+") duration:"+sDuration+" sec");
+                cb2BeCalledOnFinish();
+            });
 
         /*Error: incorrect header check at Zlib.zlibOnError [as onerror] (zlib.js:153:17)
         zlib.unzip(chunk.toString(), (err:Error, data:any) =>
@@ -54,14 +65,14 @@ class FileWalkerPipe extends Transform
             {
                 //throw err;
                 this.loggerPipe.write("DirWalkerPipe:write("+chunk+"):ERR:\n----------\n"+err+"\n-------------");
-                cb();
+                cb2BeCalledOnFinish();
                 return;
             }
 
             //...work...
             console.log(data);
             this.loggerPipe.write("DirWalkerPipe:write("+chunk+"):INF:\n----------\n"+data+"\n-------------");
-            cb();
+            cb2BeCalledOnFinish();
       }); */
 
       /* works on tar.gz, but not on zip(Error: incorrect header check)
@@ -84,7 +95,7 @@ class FileWalkerPipe extends Transform
         })
         .on('end', () => {
             this.loggerPipe.write("DirWalkerPipe:write("+chunk+"):INF: END");
-            cb();
+            cb2BeCalledOnFinish();
         });
         */
     }
