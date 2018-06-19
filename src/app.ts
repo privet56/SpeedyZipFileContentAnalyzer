@@ -12,7 +12,7 @@ import LoggerPipe from "./loggerPipe";
 //TODO:
 //logger
 //cmd params & help (see https://github.com/theclibook/theclibook/blob/master/sourcecode/client-bootstrap/bin/lounger-cli)
-//output: in table
+//throttle (to avoid maxFileHandle exceeded exception)
 //output: with graph
 //cfg - several file content processor
 //cfg: file patterns to be analyzed

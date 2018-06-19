@@ -6,6 +6,7 @@ import LoggerPipe from "./loggerPipe";
 import { ArchiveCollectedData } from './model/archiveCollectedData';
 import { Readable, Transform, Duplex } from 'stream';
 import { Time } from "./services/time";
+import Table from 'cli-table';
 
 const fs = require('fs');
 
@@ -24,14 +25,21 @@ class PresenterPipe extends Transform
         let maxEntries:number = Number.parseInt(this.cfgPipe.getString("wordMaxCount2Output", "33"));
         let sortedMap:Map<string, number> = chunk.getWords(true);
 
+        const table = new Table({
+            head: ['#', 'word', 'occurences'],
+            colWidths: [5, 33, 13],
+            style: {head: ['green'], border: ['yellow']}
+        });
+
         sortedMap.forEach((value:number, key:string) =>
         {
             nEntry++;
             if(nEntry < maxEntries)
             {
-                this.loggerPipe.write("PresenterPipe:write:("+nEntry+") '"+key+"' = "+value);
+                table.push([nEntry, key, value]);
             }
         });
+        console.log(table.toString());
         this.loggerPipe.write("PresenterPipe:write: done ("+this.timer.to()+") #words:"+sortedMap.size);
     }
     _final()

@@ -5,8 +5,12 @@
 ![SpeedyZipFileContentAnalyzer2](https://raw.githubusercontent.com/privet56/SpeedyZipFileContentAnalyzer/master/SpeedyZipFileContentAnalyzer.png)
 
 ### libs/hints
-	npm install unzip --save
-	npm install @types/unzip --save
+	ZIP:
+		npm install unzip --save
+		npm install @types/unzip --save
+	Console Output as Table: https://www.npmjs.com/package/cli-table , https://github.com/Automattic/cli-table
+		npm install cli-table --save
+		npm install @types/cli-table --save
 
 ### start command line app with:
 	shell 1: npm run watch-ts
