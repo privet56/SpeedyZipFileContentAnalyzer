@@ -20,16 +20,16 @@ class PresenterPipe extends Transform
 
     _write(chunk: ArchiveCollectedData, encoding?: string, cb?: Function) : void
     {
-        let n:number = 0;
-        let maxEntries:number = 33;//TODO: from cfg
+        let nEntry:number = 0;
+        let maxEntries:number = Number.parseInt(this.cfgPipe.getString("wordMaxCount2Output", "33"));
         let sortedMap:Map<string, number> = chunk.getWords(true);
 
         sortedMap.forEach((value:number, key:string) =>
         {
-            n++;
-            if(n < maxEntries)
+            nEntry++;
+            if(nEntry < maxEntries)
             {
-                this.loggerPipe.write("PresenterPipe:write:("+n+") '"+key+"' = "+value);
+                this.loggerPipe.write("PresenterPipe:write:("+nEntry+") '"+key+"' = "+value);
             }
         });
         this.loggerPipe.write("PresenterPipe:write: done ("+this.timer.to()+") #words:"+sortedMap.size);

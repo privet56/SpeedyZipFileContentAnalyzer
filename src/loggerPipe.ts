@@ -28,7 +28,7 @@ class LoggerPipe extends Writable
     }
     _final()
     {
-        console.log("END");
+        console.log("loggerPipe:END");
     }
 }
 

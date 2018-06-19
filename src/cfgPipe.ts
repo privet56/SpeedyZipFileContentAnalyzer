@@ -5,6 +5,8 @@ const parsed = nopt({}, {}, process.argv, 2);
 
 class CfgPipe extends Readable
 {
+    protected cfgContent:any = {};
+
     constructor()
     {
         super();
@@ -25,13 +27,21 @@ class CfgPipe extends Readable
             {
                 if(!err)
                 {
-                    var cfgobj = JSON.parse(cfg);
-                    if( cfgobj && cfgobj.dir)
-                        return this.pushCfgEntry(cfgobj.dir, true);
+                    this.cfgContent = JSON.parse(cfg);
+                    if(!this.cfgContent)
+                        this.cfgContent = {};
+                    if( this.cfgContent && this.cfgContent.dir)
+                        return this.pushCfgEntry(this.cfgContent.dir, true);
                 }
                 return this.pushCfgEntry(process.cwd(), true);
             });
         }
+    }
+    getString(cfgEntryName:string, defaultValue:string) : string
+    {
+        if(!this.cfgContent)return defaultValue;
+        if(!this.cfgContent[cfgEntryName])return defaultValue;
+        return this.cfgContent[cfgEntryName];
     }
 };
 

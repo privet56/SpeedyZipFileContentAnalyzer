@@ -16,7 +16,6 @@ import LoggerPipe from "./loggerPipe";
 //output: with graph
 //cfg - several file content processor
 //cfg: file patterns to be analyzed
-//time output
 //stopword handling (ignore them)
 //cli help/error handling
 //exit code
