@@ -7,6 +7,7 @@ var request = require('request');
 var zlib = require('zlib');
 var tar = require('tar');
 import { ArchiveContent, ArchiveContentType } from "./model/archiveContent";
+import { ArchiveCollectedData} from "./model/archiveCollectedData";
 import CfgPipe from "./cfgPipe";
 import LoggerPipe from "./loggerPipe";
 import { Readable, Transform, Duplex } from 'stream';
@@ -25,7 +26,7 @@ class FileContentPipe extends Transform
 
     constructor(protected cfgPipe:CfgPipe, protected loggerPipe:LoggerPipe)
     {
-        super({writableObjectMode:true});
+        super({writableObjectMode:true, readableObjectMode:true});
     }
 
     _write(chunk: ArchiveContent, encoding?: string, cb2BeCalledOnFinish?: Function) : void
@@ -59,20 +60,8 @@ class FileContentPipe extends Transform
     }
     _final()
     {
-        var sortedMap = new Map([...this.words.entries()].sort((a:[string,number],b:[string,number]) => 
-        {
-            if(a[1] > b[1])return -1;
-            if(a[1] < b[1])return 1;
-            return 0;
-        }));
-
-        let n:number = 0;
-        sortedMap.forEach((value:number, key:string) =>
-        {
-            n++;
-            if(n < 33)
-                this.loggerPipe.write("FileContentPipe:final:("+n+") '"+key+"' = "+value);
-        });
+        var arvhiveCollectedData:ArchiveCollectedData = new ArchiveCollectedData(this.words);
+        this.push(arvhiveCollectedData);
         this.push(null);
     }
 }
