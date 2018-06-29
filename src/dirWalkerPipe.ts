@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 import path from "path";
 import bluebird from "bluebird";
 import CfgPipe from "./cfgPipe";
+import { Archive } from "./model/archive";
 import LoggerPipe from "./loggerPipe";
 import { Readable, Transform, Duplex } from 'stream';
 
@@ -11,7 +12,7 @@ class DirWalkerPipe extends Transform
 {
     constructor(protected cfgPipe:CfgPipe, protected loggerPipe:LoggerPipe)
     {
-        super();
+        super({readableObjectMode:true});
     }
 
     _write(chunk: any, encoding?: string, cb?: Function) : void
@@ -21,7 +22,8 @@ class DirWalkerPipe extends Transform
             if(!err)
             {
                 files.forEach(file => {
-                    this.push(path.join(chunk.toString(), file));
+                    let fn:string = path.join(chunk.toString(), file);
+                    this.push(new Archive(fn));
                 });
             }
             else

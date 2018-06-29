@@ -20,9 +20,8 @@ type FromIndex<K extends string> = { [key in K]: number }
 class FileContentPipe extends Transform
 {
     protected words : Map<string, number> = new Map<string, number>();
-    //protected words : Map<string, number> = new Map<string, number>();
-    //protected words : { [key: string]: number };
-    //protected words :  [string, number] =  [];
+    protected metaContents : Map<string, number> = new Map<string, number>();
+    protected inReadCurrently:number = 0;
 
     constructor(protected cfgPipe:CfgPipe, protected loggerPipe:LoggerPipe)
     {
@@ -31,7 +30,8 @@ class FileContentPipe extends Transform
 
     _write(chunk: ArchiveContent, encoding?: string, cb2BeCalledOnFinish?: Function) : void
     {
-        //this.loggerPipe.write("FileContentPipe:write("+chunk.value+")");
+        this.inReadCurrently++;
+        if(this.inReadCurrently != 1 ) this.loggerPipe.write("FileContentPipe:write("+chunk.value+") this.inReadCurrently:"+this.inReadCurrently);
         let input:string = chunk.value.toLocaleLowerCase();
         let nlastDot:number = input.lastIndexOf('.');
         let nCharsCountAfterLastDot = input.substr(nlastDot+1).length;
@@ -43,26 +43,31 @@ class FileContentPipe extends Transform
             input = input.substr(0, nlastDot);
         }
         let a:string[] = input.split(/[^a-z]/g);//TODO: handle locals!
-        //var s:string = a.join(" + ");
-        //console.log("<"+input+"> --> "+s);
 
-        //let n:any = this.words[input as any];
+        let alreadySavedTerms:Map<string, number> = chunk.type == ArchiveContentType.name ? this.words : this.metaContents;
 
         a.map((word:string) =>
         {
             if(!word)return null;
             if(word.length < 3)return null;
-            let n:number = this.words.has(word) ? this.words.get(word) : 0;
-            this.words.set(word, n+1);
+            let n:number = alreadySavedTerms.has(word) ? alreadySavedTerms.get(word) : 0;
+            alreadySavedTerms.set(word, n+1);
         });
 
         cb2BeCalledOnFinish();
+        this.inReadCurrently--;
     }
-    _final()
+    _final(cb2BeCalledOnFinish?: Function)
     {
-        var arvhiveCollectedData:ArchiveCollectedData = new ArchiveCollectedData(this.words);
-        this.push(arvhiveCollectedData);
-        this.push(null);
+        {
+            var arvhiveCollectedData:ArchiveCollectedData = new ArchiveCollectedData(this.words, ArchiveContentType.name);
+            this.push(arvhiveCollectedData);
+        }
+        {
+            var arvhiveCollectedData:ArchiveCollectedData = new ArchiveCollectedData(this.metaContents, ArchiveContentType.metadata);
+            this.push(arvhiveCollectedData);
+        }
+        cb2BeCalledOnFinish();
     }
 }
 

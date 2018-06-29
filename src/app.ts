@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 import path from "path";
 import bluebird from "bluebird";
+var Throttle = require('stream-throttle/index.js').Throttle;
 const zlib = require('zlib');
 import CfgPipe from "./cfgPipe";
 import DirWalkerPipe from "./dirWalkerPipe";
@@ -10,7 +11,6 @@ import PresenterPipe from "./presenterPipe";
 import LoggerPipe from "./loggerPipe";
 
 //TODO:
-//logger
 //cmd params & help (see https://github.com/theclibook/theclibook/blob/master/sourcecode/client-bootstrap/bin/lounger-cli)
 //throttle (to avoid maxFileHandle exceeded exception)
 //output: with graph
@@ -32,6 +32,7 @@ var loggerPipe:LoggerPipe = new LoggerPipe(cfgPipe);
 
 (cfgPipe)
     .pipe(new DirWalkerPipe(cfgPipe, loggerPipe))
+    //.pipe(new Throttle({rate: 10, objecMode:true}))   //TODO: fork & impl objecMode
     .pipe(new FileWalkerPipe(cfgPipe, loggerPipe))
     .pipe(new FileContentPipe(cfgPipe, loggerPipe))
     .pipe(new PresenterPipe(cfgPipe, loggerPipe))

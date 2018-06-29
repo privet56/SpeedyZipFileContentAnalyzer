@@ -4,6 +4,7 @@ import bluebird from "bluebird";
 import CfgPipe from "./cfgPipe";
 import LoggerPipe from "./loggerPipe";
 import { ArchiveCollectedData } from './model/archiveCollectedData';
+import { ArchiveContentType } from './model/archiveContent';
 import { Readable, Transform, Duplex } from 'stream';
 import { Time } from "./services/time";
 import Table from 'cli-table';
@@ -23,10 +24,11 @@ class PresenterPipe extends Transform
     {
         let nEntry:number = 0;
         let maxEntries:number = Number.parseInt(this.cfgPipe.getString("wordMaxCount2Output", "33"));
+
         let sortedMap:Map<string, number> = chunk.getWords(true);
 
         const table = new Table({
-            head: ['#', 'word', 'occurences'],
+            head: ['#', 'word ('+chunk.archiveContentType+')', 'occurences'],
             colWidths: [5, 33, 13],
             style: {head: ['green'], border: ['yellow']}
         });
@@ -40,11 +42,12 @@ class PresenterPipe extends Transform
             }
         });
         console.log(table.toString());
-        this.loggerPipe.write("PresenterPipe:write: done ("+this.timer.to()+") #words:"+sortedMap.size);
+        this.loggerPipe.write("PresenterPipe:write: done ("+this.timer.to()+") #words:"+sortedMap.size+' ('+chunk.archiveContentType+')');
+        cb();
     }
-    _final()
+    _final(cb?: Function)
     {
-
+        cb();
     }
 }
 
