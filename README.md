@@ -1,4 +1,4 @@
-# SpeedyZipFileContentAnalyzer
+# SpeedyZipAnalyzer
 ## World's fastest ZIP Archive File Content Analyzer, built on NodeJS Stream/Pipes
 ### State: Work in Progress
 
