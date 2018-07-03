@@ -11,12 +11,12 @@ import PresenterPipe from "./presenterPipe";
 import LoggerPipe from "./loggerPipe";
 
 //TODO:
+//stopword handling (ignore them)
 //cmd params & help (see https://github.com/theclibook/theclibook/blob/master/sourcecode/client-bootstrap/bin/lounger-cli)
 //throttle (to avoid maxFileHandle exceeded exception)
 //output: with graph
 //cfg - several file content processor
 //cfg: file patterns to be analyzed
-//stopword handling (ignore them)
 //cli help/error handling
 //exit code
 //publish on npm

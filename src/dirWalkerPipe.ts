@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 import path from "path";
 import bluebird from "bluebird";
+import { PipeTransform } from "./services/pipeTransformer";
 import CfgPipe from "./cfgPipe";
 import { Archive } from "./model/archive";
 import LoggerPipe from "./loggerPipe";
@@ -8,14 +9,14 @@ import { Readable, Transform, Duplex } from 'stream';
 
 const fs = require('fs');
 
-class DirWalkerPipe extends Transform
+class DirWalkerPipe extends PipeTransform
 {
-    constructor(protected cfgPipe:CfgPipe, protected loggerPipe:LoggerPipe)
+    constructor(cfgPipe:CfgPipe, loggerPipe:LoggerPipe)
     {
-        super({readableObjectMode:true});
+        super({readableObjectMode:true}, cfgPipe, loggerPipe);
     }
 
-    _write(chunk: any, encoding?: string, cb?: Function) : void
+    _transform(chunk: any, encoding?: string, cb?: Function) : void
     {
         fs.readdir(chunk, (err:Error, files:string[]) => {
 
@@ -23,22 +24,26 @@ class DirWalkerPipe extends Transform
             {
                 files.forEach(file => {
                     let fn:string = path.join(chunk.toString(), file);
+                    this.log("pushing:"+fn);
+                    //this.write(new Archive(fn));
                     this.push(new Archive(fn));
+                    this.log("pushed::"+fn);
                 });
             }
             else
             {
-                this.loggerPipe.write("DirWalkerPipe:write:ERR:"+err);
+                this.log("write:ERR:"+err);
                 this.loggerPipe.write(err);
             }
 
             this.push(null);
             cb();
+            this.end();
         });
     }
-    _final()
+    _final(cb?:Function)
     {
-
+        cb();
     }
 }
 

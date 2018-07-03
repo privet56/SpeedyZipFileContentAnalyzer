@@ -8,7 +8,7 @@ var zlib = require('zlib');
 var tar = require('tar');
 
 var mi = require('mediainfo-wrapper');
-
+import { PipeTransform } from "./services/pipeTransformer";
 import { Archive } from "./model/archive";
 import { ArchiveContent, ArchiveContentType } from "./model/archiveContent";
 import CfgPipe from "./cfgPipe";
@@ -18,20 +18,22 @@ import { ArchiveCollectedData } from "./model/archiveCollectedData";
 
 const fs = require('fs');
 
-class FileWalkerPipe extends Transform
+class FileWalkerPipe extends PipeTransform
 {
     protected nrOfArchivesRead:number = 0;
     protected nrOfArchivesReadingCurrently:number = 0;
 
-    constructor(protected cfgPipe:CfgPipe, protected loggerPipe:LoggerPipe)
+    constructor(cfgPipe:CfgPipe, loggerPipe:LoggerPipe)
     {
-        super({writableObjectMode:true, readableObjectMode:true});
+        super({writableObjectMode:true, readableObjectMode:true}, cfgPipe, loggerPipe);
     }
 
     protected callCallBackOnce(cb:Function, callbackCalled:boolean) : boolean
     {
         if( cb && !callbackCalled)
+        {
             cb();
+        }
         callbackCalled = true;
         this.nrOfArchivesReadingCurrently--;
         return true;
@@ -49,23 +51,26 @@ class FileWalkerPipe extends Transform
         let self = this;
 
         //TODO: skip 0 byte ZIP files!
-        //if(this.nrOfArchivesReadingCurrently != 1)this.loggerPipe.write("FileWalker:write: START listing file '"+fn+"' (nrOfArchivesReadingCur:"+this.nrOfArchivesReadingCurrently+")");
+        if(this.nrOfArchivesReadingCurrently != 991)
+        {
+            this.log("write: START listing("+(this.nrOfArchivesRead+1)+") file '"+fn+"' (nrOfArchivesReadingCur:"+this.nrOfArchivesReadingCurrently+")");
+        }
 
         fs.createReadStream(fn)
             .on('error', (err:any) => {
-                this.loggerPipe.write("FileWalkerPipe:write("+chunk.fn+"):ERR !fs.createReadStream:\n----------\n"+err+"\n-------------");
+                this.log("write("+chunk.fn+"):ERR !fs.createReadStream:\n----------\n"+err+"\n-------------");
                 callbackCalled = this.callCallBackOnce(cb2BeCalledOnFinish, callbackCalled);
             })
             .pipe(unzip.Parse())
             .on('error', (err:any) => {
-                this.loggerPipe.write("FileWalkerPipe:write("+chunk.fn+"):ERR !unzip.parse:\n----------\n"+err+"\n-------------");
+                this.log("write("+chunk.fn+"):ERR !unzip.parse:\n----------\n"+err+"\n-------------");
                 callbackCalled = this.callCallBackOnce(cb2BeCalledOnFinish, callbackCalled);
             })
             .on('entry',  (entry:unzip.Entry) =>
             {
                 var fileName = entry.path;
                 var type = entry.type; // 'Directory' or 'File'
-                //this.loggerPipe.write("FileWalkerPipe:write("+chunk+"):INF "+type+" found in archive:>"+fileName+"<");
+                //this.log("write("+chunk+"):INF "+type+" found in archive:>"+fileName+"<");
                 var arvhiveFileContent:ArchiveContent = new ArchiveContent(ArchiveContent.name, fileName, ArchiveContentType.name, chunk.fn);
                 this.push(arvhiveFileContent);
                 nrOfFilesInArchive++;
@@ -74,14 +79,14 @@ class FileWalkerPipe extends Transform
                     let end:Date = new Date();
                     let duration:number = ((end.valueOf() - start.valueOf()) / 1000);
                     let sDuration = (duration < 11) ? duration.toFixed(3) : duration.toFixed(0);    
-                    this.loggerPipe.write("FileWalker:write: ...still working on file '"+chunk+"' duration:"+sDuration+" sec ("+nrOfFilesInArchive+" ZIP entries until now...) ");
+                    this.log("write: ...still working on file '"+chunk+"' duration:"+sDuration+" sec ("+nrOfFilesInArchive+" ZIP entries until now...) ");
                 }*/
                 //var size = entry.size;
                 {
                     let extactedfn = path.join(os.tmpdir(), path.basename(chunk.fn) + path.basename(entry.path));
                     entry.pipe(fs.createWriteStream(extactedfn)
                         .on('error', (err:any) => {
-                            this.loggerPipe.write("FileWalkerPipe:write("+chunk.fn+"):ERR !extract("+extactedfn+"):'"+chunk.fn+"' & '"+entry.path+"':\n----------\n"+err+"\n-------------");
+                            this.log("write("+chunk.fn+"):ERR !extract("+extactedfn+"):'"+chunk.fn+"' & '"+entry.path+"':\n----------\n"+err+"\n-------------");
                         })
                         .on('finish', () => {
 
@@ -99,12 +104,12 @@ class FileWalkerPipe extends Transform
                 entry.autodrain();//has to be after unpacking!
             })
             .on('close', () => {
-                //this.loggerPipe.write("FileWalkerPipe:write("+chunk+"):INF: close file");
+                //this.log("write("+chunk+"):INF: close file");
                 let end:Date = new Date();
                 let duration:number = ((end.valueOf() - start.valueOf()) / 1000);
                 let sDuration = (duration < 11) ? duration.toFixed(3) : duration.toFixed(0);
 
-                this.loggerPipe.write("FileWalker:write: listing("+(++this.nrOfArchivesRead)+") file '"+chunk.fn+"' finished (nrOfFilesInZip:"+nrOfFilesInArchive+") duration:"+sDuration+" sec (nrOfArchivesReadingCur:"+this.nrOfArchivesReadingCurrently+")");
+                this.log("write: END:: listing("+(++this.nrOfArchivesRead)+") file '"+chunk.fn+"' finished (nrOfFilesInZip:"+nrOfFilesInArchive+") duration:"+sDuration+" sec (nrOfArchivesReadingCur:"+this.nrOfArchivesReadingCurrently+")");
                 callbackCalled = this.callCallBackOnce(cb2BeCalledOnFinish, callbackCalled);
             });
 

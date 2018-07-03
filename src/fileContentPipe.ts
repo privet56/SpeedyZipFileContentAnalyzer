@@ -6,6 +6,7 @@ import bluebird from "bluebird";
 var request = require('request');
 var zlib = require('zlib');
 var tar = require('tar');
+import { PipeTransform } from "./services/pipeTransformer";
 import { ArchiveContent, ArchiveContentType } from "./model/archiveContent";
 import { ArchiveCollectedData} from "./model/archiveCollectedData";
 import CfgPipe from "./cfgPipe";
@@ -17,21 +18,21 @@ const fs = require('fs');
 
 type FromIndex<K extends string> = { [key in K]: number }
 
-class FileContentPipe extends Transform
+class FileContentPipe extends PipeTransform
 {
     protected words : Map<string, number> = new Map<string, number>();
     protected metaContents : Map<string, number> = new Map<string, number>();
     protected inReadCurrently:number = 0;
 
-    constructor(protected cfgPipe:CfgPipe, protected loggerPipe:LoggerPipe)
+    constructor(cfgPipe:CfgPipe, loggerPipe:LoggerPipe)
     {
-        super({writableObjectMode:true, readableObjectMode:true});
+        super({writableObjectMode:true, readableObjectMode:true}, cfgPipe, loggerPipe);
     }
 
-    _write(chunk: ArchiveContent, encoding?: string, cb2BeCalledOnFinish?: Function) : void
+    _transform(chunk: ArchiveContent, encoding?: string, cb2BeCalledOnFinish?: Function) : void
     {
         this.inReadCurrently++;
-        if(this.inReadCurrently != 1 ) this.loggerPipe.write("FileContentPipe:write("+chunk.value+") this.inReadCurrently:"+this.inReadCurrently);
+        if(this.inReadCurrently != 1 ) this.log("write("+chunk.value+") this.inReadCurrently:"+this.inReadCurrently);
         let input:string = chunk.value.toLocaleLowerCase();
         let nlastDot:number = input.lastIndexOf('.');
         let nCharsCountAfterLastDot = input.substr(nlastDot+1).length;
