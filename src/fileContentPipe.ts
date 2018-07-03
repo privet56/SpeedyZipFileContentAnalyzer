@@ -22,7 +22,6 @@ class FileContentPipe extends PipeTransform
 {
     protected words : Map<string, number> = new Map<string, number>();
     protected metaContents : Map<string, number> = new Map<string, number>();
-    protected inReadCurrently:number = 0;
 
     constructor(cfgPipe:CfgPipe, loggerPipe:LoggerPipe)
     {
@@ -31,13 +30,11 @@ class FileContentPipe extends PipeTransform
 
     _transform(chunk: ArchiveContent, encoding?: string, cb2BeCalledOnFinish?: Function) : void
     {
-        this.inReadCurrently++;
-        if(this.inReadCurrently != 1 ) this.log("write("+chunk.value+") this.inReadCurrently:"+this.inReadCurrently);
+        let callbackCalled: boolean = this.onTransformStart();
+
         let input:string = chunk.value.toLocaleLowerCase();
         let nlastDot:number = input.lastIndexOf('.');
         let nCharsCountAfterLastDot = input.substr(nlastDot+1).length;
-
-        //console.log("input:'"+input+"' nlastDot:"+nlastDot+" nCharsCountAfterLastDot:"+nCharsCountAfterLastDot+" inputWithExtensionStripped:'"+input.substr(0, nlastDot)+"'");
 
         if (nCharsCountAfterLastDot < 5)
         {
@@ -55,8 +52,7 @@ class FileContentPipe extends PipeTransform
             alreadySavedTerms.set(word, n+1);
         });
 
-        cb2BeCalledOnFinish();
-        this.inReadCurrently--;
+        callbackCalled = this.onTransformEnd(cb2BeCalledOnFinish, callbackCalled);
     }
     _final(cb2BeCalledOnFinish?: Function)
     {

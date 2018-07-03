@@ -4,6 +4,9 @@ import { Readable, Transform, Duplex, TransformOptions } from 'stream';
 
 export class PipeTransform extends Transform
 {
+    protected nrOfTransformsCurrently:number = 0;
+    protected logAllTransformStartsAndEnds:boolean = false;
+
     constructor(opts: TransformOptions, protected cfgPipe:CfgPipe, protected loggerPipe:LoggerPipe)
     {
         super(opts);
@@ -12,17 +15,30 @@ export class PipeTransform extends Transform
     {
         this.loggerPipe.write(this.constructor.name+":"+s);
     }
-}
+    protected onTransformStart(sLogPostFix?:string, forceLog?:boolean) : boolean
+    {
+        this.nrOfTransformsCurrently++;
 
-/*usage: derive from it:
-import { PipeTransform } from "./services/pipeTransformer";
-class DirWalkerPipe extends PipeTransform
-{
-    constructor(cfgPipe:CfgPipe, loggerPipe:LoggerPipe)
-    {
-        super({readableObjectMode:true}, cfgPipe, loggerPipe);
+        if(forceLog || this.logAllTransformStartsAndEnds)
+        {
+            this.log("onTrStrt(#Transforms:"+this.nrOfTransformsCurrently+")"+(sLogPostFix ? sLogPostFix : ''));
+        }
+        return false;
     }
-    _transform(chunk: any, encoding?: string, cb?: Function) : void
-    {
-        this.log("pushing:"+fn);
-*/
+    protected onTransformEnd(cb:Function, callbackCalled:boolean, sLogPostFix?:string, forceLog?:boolean) : boolean
+    {        
+        if( cb && !callbackCalled)
+        {
+            cb();
+        }
+        callbackCalled = true;
+        this.nrOfTransformsCurrently--;
+
+        if(forceLog || this.logAllTransformStartsAndEnds)
+        {
+            this.log("onTrEnd:(#Transforms:"+this.nrOfTransformsCurrently+")"+(sLogPostFix ? sLogPostFix : ''));
+        }
+
+        return true;
+    }
+}

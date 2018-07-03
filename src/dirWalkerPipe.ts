@@ -18,16 +18,15 @@ class DirWalkerPipe extends PipeTransform
 
     _transform(chunk: any, encoding?: string, cb?: Function) : void
     {
+        let callbackCalled: boolean = this.onTransformStart();
+
         fs.readdir(chunk, (err:Error, files:string[]) => {
 
             if(!err)
             {
                 files.forEach(file => {
                     let fn:string = path.join(chunk.toString(), file);
-                    this.log("pushing:"+fn);
-                    //this.write(new Archive(fn));
                     this.push(new Archive(fn));
-                    this.log("pushed::"+fn);
                 });
             }
             else
@@ -36,9 +35,7 @@ class DirWalkerPipe extends PipeTransform
                 this.loggerPipe.write(err);
             }
 
-            this.push(null);
-            cb();
-            this.end();
+            callbackCalled = this.onTransformEnd(cb, callbackCalled);
         });
     }
     _final(cb?:Function)

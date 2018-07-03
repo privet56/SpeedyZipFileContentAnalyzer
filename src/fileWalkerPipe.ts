@@ -21,50 +21,33 @@ const fs = require('fs');
 class FileWalkerPipe extends PipeTransform
 {
     protected nrOfArchivesRead:number = 0;
-    protected nrOfArchivesReadingCurrently:number = 0;
 
     constructor(cfgPipe:CfgPipe, loggerPipe:LoggerPipe)
     {
         super({writableObjectMode:true, readableObjectMode:true}, cfgPipe, loggerPipe);
     }
 
-    protected callCallBackOnce(cb:Function, callbackCalled:boolean) : boolean
+    _transform(chunk: Archive, encoding?: string, cb2BeCalledOnFinish?: Function) : void
     {
-        if( cb && !callbackCalled)
-        {
-            cb();
-        }
-        callbackCalled = true;
-        this.nrOfArchivesReadingCurrently--;
-        return true;
-    }
-
-    _write(chunk: Archive, encoding?: string, cb2BeCalledOnFinish?: Function) : void
-    {
-        this.nrOfArchivesReadingCurrently++;
+        let fn:string = chunk.fn;
+        let sLogPostFix:string = "write: START listing("+(this.nrOfArchivesRead+1)+") file '"+fn;
+        let callbackCalled: boolean = this.onTransformStart(sLogPostFix, true);
 
         let nrOfFilesInArchive:number = 0;
         let start:Date = new Date();
-        let callbackCalled: boolean = false;
-        let fn:string = chunk.fn;
-
         let self = this;
 
         //TODO: skip 0 byte ZIP files!
-        if(this.nrOfArchivesReadingCurrently != 991)
-        {
-            this.log("write: START listing("+(this.nrOfArchivesRead+1)+") file '"+fn+"' (nrOfArchivesReadingCur:"+this.nrOfArchivesReadingCurrently+")");
-        }
 
         fs.createReadStream(fn)
             .on('error', (err:any) => {
                 this.log("write("+chunk.fn+"):ERR !fs.createReadStream:\n----------\n"+err+"\n-------------");
-                callbackCalled = this.callCallBackOnce(cb2BeCalledOnFinish, callbackCalled);
+                callbackCalled = this.onTransformEnd(cb2BeCalledOnFinish, callbackCalled);
             })
             .pipe(unzip.Parse())
             .on('error', (err:any) => {
                 this.log("write("+chunk.fn+"):ERR !unzip.parse:\n----------\n"+err+"\n-------------");
-                callbackCalled = this.callCallBackOnce(cb2BeCalledOnFinish, callbackCalled);
+                callbackCalled = this.onTransformEnd(cb2BeCalledOnFinish, callbackCalled);
             })
             .on('entry',  (entry:unzip.Entry) =>
             {
@@ -109,8 +92,8 @@ class FileWalkerPipe extends PipeTransform
                 let duration:number = ((end.valueOf() - start.valueOf()) / 1000);
                 let sDuration = (duration < 11) ? duration.toFixed(3) : duration.toFixed(0);
 
-                this.log("write: END:: listing("+(++this.nrOfArchivesRead)+") file '"+chunk.fn+"' finished (nrOfFilesInZip:"+nrOfFilesInArchive+") duration:"+sDuration+" sec (nrOfArchivesReadingCur:"+this.nrOfArchivesReadingCurrently+")");
-                callbackCalled = this.callCallBackOnce(cb2BeCalledOnFinish, callbackCalled);
+                sLogPostFix = "write: END:: listing("+(++this.nrOfArchivesRead)+") file '"+chunk.fn+"' (nrOfFilesInZip:"+nrOfFilesInArchive+") duration:"+sDuration+" sec";
+                callbackCalled = this.onTransformEnd(cb2BeCalledOnFinish, callbackCalled, sLogPostFix, true);
             });
 
         /*Error: incorrect header check at Zlib.zlibOnError [as onerror] (zlib.js:153:17) zlib.unzip(chunk.toString(), (err:Error, data:any) =>*/
