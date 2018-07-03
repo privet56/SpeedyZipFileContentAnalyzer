@@ -30,9 +30,9 @@ export class PipeTransform extends Transform
         if( cb && !callbackCalled)
         {
             cb();
+            this.nrOfTransformsCurrently--;
         }
         callbackCalled = true;
-        this.nrOfTransformsCurrently--;
 
         if(forceLog || this.logAllTransformStartsAndEnds)
         {
