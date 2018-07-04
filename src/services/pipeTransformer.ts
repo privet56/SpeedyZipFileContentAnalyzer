@@ -51,4 +51,10 @@ export class PipeTransform extends Transform
         this.onTransformLog(forceLog, "onTrEnd:(#Transforms:"+this.nrOfTransformsCurrently+")"+(sLogPostFix ? sLogPostFix : ''));
         return true;
     }
+
+    push(chunk: any, encoding?: string): boolean
+    {
+        let r:boolean = super.push(chunk, encoding);
+        return r;
+    }
 }

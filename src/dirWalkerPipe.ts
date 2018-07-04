@@ -27,7 +27,7 @@ class DirWalkerPipe extends PipeTransform
                 files.forEach(file => {
                     let fn:string = path.join(chunk.toString(), file);
                     this.push(new Archive(fn));
-                    this.emit(fn);
+                    this.emit(fn);//...irrelevant at the moment...
                 });
             }
             else
