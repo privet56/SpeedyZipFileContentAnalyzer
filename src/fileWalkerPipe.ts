@@ -30,7 +30,7 @@ class FileWalkerPipe extends PipeTransform
     _transform(chunk: Archive, encoding?: string, cb2BeCalledOnFinish?: Function) : void
     {
         let fn:string = chunk.fn;
-        let sLogPostFix:string = "write: START listing("+(this.nrOfArchivesRead+1)+") file '"+fn;
+        let sLogPostFix:string = "_trnsfrm: START listing("+(this.nrOfArchivesRead+1)+") file '"+fn;
         let callbackCalled: boolean = this.onTransformStart(sLogPostFix, true);
 
         let nrOfFilesInArchive:number = 0;
@@ -41,12 +41,12 @@ class FileWalkerPipe extends PipeTransform
 
         fs.createReadStream(fn)
             .on('error', (err:any) => {
-                this.log("write("+chunk.fn+"):ERR !fs.createReadStream:\n----------\n"+err+"\n-------------");
+                this.log("_trnsfrm("+chunk.fn+"):ERR !fs.createReadStream:\n----------\n"+err+"\n-------------");
                 callbackCalled = this.onTransformEnd(cb2BeCalledOnFinish, callbackCalled);
             })
             .pipe(unzip.Parse())
             .on('error', (err:any) => {
-                this.log("write("+chunk.fn+"):ERR !unzip.parse:\n----------\n"+err+"\n-------------");
+                this.log("_trnsfrm("+chunk.fn+"):ERR !unzip.parse:\n----------\n"+err+"\n-------------");
                 callbackCalled = this.onTransformEnd(cb2BeCalledOnFinish, callbackCalled);
             })
             .on('entry',  (entry:unzip.Entry) =>
@@ -69,7 +69,7 @@ class FileWalkerPipe extends PipeTransform
                     let extactedfn = path.join(os.tmpdir(), path.basename(chunk.fn) + path.basename(entry.path));
                     entry.pipe(fs.createWriteStream(extactedfn)
                         .on('error', (err:any) => {
-                            this.log("write("+chunk.fn+"):ERR !extract("+extactedfn+"):'"+chunk.fn+"' & '"+entry.path+"':\n----------\n"+err+"\n-------------");
+                            this.log("_trnsfrm("+chunk.fn+"):ERR !extract("+extactedfn+"):'"+chunk.fn+"' & '"+entry.path+"':\n----------\n"+err+"\n-------------");
                         })
                         .on('finish', () => {
 
@@ -92,7 +92,7 @@ class FileWalkerPipe extends PipeTransform
                 let duration:number = ((end.valueOf() - start.valueOf()) / 1000);
                 let sDuration = (duration < 11) ? duration.toFixed(3) : duration.toFixed(0);
 
-                sLogPostFix = "write: END:: listing("+(++this.nrOfArchivesRead)+") file '"+chunk.fn+"' (nrOfFilesInZip:"+nrOfFilesInArchive+") duration:"+sDuration+" sec";
+                sLogPostFix = "_trnsfrm: END:: listing("+(++this.nrOfArchivesRead)+") file '"+chunk.fn+"' (nrOfFilesInZip:"+nrOfFilesInArchive+") duration:"+sDuration+" sec";
                 callbackCalled = this.onTransformEnd(cb2BeCalledOnFinish, callbackCalled, sLogPostFix, true);
             });
 
